@@ -2,8 +2,6 @@ import pandas as pd
 from scholarly import scholarly
 import random
 import time
-import tensorflow as tf
-from tensorflow import keras
 
 def processSearch(publication): # collect data from fetched publication
   title = publication["bib"]["title"]
