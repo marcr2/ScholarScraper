@@ -20,8 +20,10 @@ def fetch_semantic_scholar_abstracts(query, max_results):
     rows = []
     final_list = pd.DataFrame(rows, columns=["title", "authors", "num_citations", "pub_year", "pub_id", "abstract"])
     offset = 0
-    limit = 100  # 100 journal articles per request
+    limit = 10
     papers_added = 0
+    max_retries = 5
+    retry_wait_time = 60  # wait time in seconds before retrying
     with tqdm(
         total=max_results,
         desc="Fetching papers",
@@ -29,15 +31,23 @@ def fetch_semantic_scholar_abstracts(query, max_results):
         colour="WHITE"
     ) as pbar:
         while len(final_list) < max_results: # send request for publications
-            params = {
-                "query": query,
-                "offset": offset,
-                "limit": limit,
-                "fields": "title,authors,year,citationCount,paperId,abstract"
-            }
-            response = requests.get(base_url, headers=headers, params=params)
-            if response.status_code != 200: # makes sure that a response is given
-                print(f"Error: {response.status_code} - {response.text}")
+            retries = 0
+            while retries < max_retries:
+                params = {
+                    "query": query,
+                    "offset": offset,
+                    "limit": limit,
+                    "fields": "title,authors,year,citationCount,paperId,abstract"
+                }
+                response = requests.get(base_url, headers=headers, params=params)
+                if response.status_code == 200:
+                    break
+                else:
+                    print(f"Error: {response.status_code} - {response.text}. Retrying in {retry_wait_time} seconds...")
+                    retries += 1
+                    time.sleep(retry_wait_time)
+            if retries == max_retries:
+                print("Max retries reached. Exiting.")
                 break
             data = response.json()
             if not data.get("data"):
@@ -52,7 +62,7 @@ def fetch_semantic_scholar_abstracts(query, max_results):
             papers_added = 0
             offset += len(data["data"])
             if len(final_list) < max_results: # only waits if needed
-                time.sleep(300)  # rate limit is 100 requests per 5 minutes
+                time.sleep(30)  # rate limit is 100 requests per 5 minutes
             else:
                 print(f"Caught {len(final_list)} articles!")
                 break
