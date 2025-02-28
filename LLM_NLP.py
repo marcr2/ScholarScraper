@@ -1,5 +1,3 @@
-# import tensorflow as tf # errors with tensorflow import
-# from tensorflow import keras
 import pandas as pd
 
 def processWSData():
@@ -28,3 +26,5 @@ def nlpRead(abstract_rows):
     print(abstract_rows)
 
 processWSData()
+
+# possibly use the following LLM to read the abstracts: https://huggingface.co/deepseek-ai/DeepSeek-R1
