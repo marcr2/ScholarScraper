@@ -1,4 +1,4 @@
-from scraper import fetch_semantic_scholar_abstracts
+from fetcher import fetch_semantic_scholar_abstracts
 from llm import processWSData, llmRead
 from scorer import processLLMData
 from visualizer import plotData
