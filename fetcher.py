@@ -57,9 +57,7 @@ class SemanticScholarFetcher:
                         "limit": limit,
                         "fields": "title,authors,year,citationCount,paperId,abstract",
                     }
-                    response = requests.get(
-                        self.base_url, headers=self.headers, params=params, timeout=30
-                    )
+                    response = requests.get(self.base_url, headers=self.headers, params=params, timeout=30)
                     if response.status_code == 200:
                         break
                     else:
@@ -77,7 +75,7 @@ class SemanticScholarFetcher:
                 papers_added = 0
                 for paper in data["data"]:
                     if paper.get("abstract"):
-                        processed_result = self.__extract_publication_details(paper)
+                        processed_result = self._extract_publication_details(paper)
                         self.results.loc[len(self.results)] = processed_result
                         papers_added += 1
                         self.results.to_csv(self.output_path, index=False)

@@ -1,4 +1,4 @@
-from fetcher import fetch_semantic_scholar_abstracts
+from fetcher import SemanticScholarFetcher
 from llm import processWSData, llmRead
 from scorer import processLLMData
 from visualizer import plotData
@@ -13,7 +13,8 @@ target_object = input(
     "What would you like to group by? (Ie. treatment option, deep learning algorithm) "
 )
 
-fetch_semantic_scholar_abstracts(query, max_results)  # scrape articles
+fetcher = SemanticScholarFetcher(query, max_results)  # initialize fetcher
+results = fetcher.fetch()  # fetch articles
 import_data = processWSData(processType)  # set up for LLM/NLP
 processed_data = llmRead(
     import_data, field, target_object
