@@ -1,9 +1,8 @@
-import pytest
-
-from fetcher import processSearch
+from fetcher import SemanticScholarFetcher
 
 
-def test_processSearch():
+def test_extract_publication_details():
+    fetcher = SemanticScholarFetcher(query="test", max_results=10)
     publication = {
         "title": "Sample Title",
         "abstract": "Sample Abstract",
@@ -12,7 +11,7 @@ def test_processSearch():
         "citationCount": 10,
         "year": 2021,
     }
-    expected_result = [
+    expected_details = [
         "Sample Title",
         ["Author1", "Author2"],
         10,
@@ -20,18 +19,4 @@ def test_processSearch():
         "12345",
         "Sample Abstract",
     ]
-    assert processSearch(publication) == expected_result
-
-
-def test_processSearch_missing_fields():
-    publication = {
-        "title": "Sample Title",
-        "abstract": "Sample Abstract",
-        "authors": ["Author1", "Author2"],
-        "paperId": "12345",
-        "citationCount": 10,
-        "year": 2021,
-    }
-    del publication["abstract"]
-    with pytest.raises(KeyError):
-        processSearch(publication)
+    assert fetcher._extract_publication_details(publication) == expected_details

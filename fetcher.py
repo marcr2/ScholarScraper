@@ -5,78 +5,87 @@ import requests
 from tqdm import tqdm
 
 
-def processSearch(publication):  # collect data from fetched publication
-    title = publication["title"]
-    abstract = publication["abstract"]
-    authors = publication["authors"]
-    pub_id = publication["paperId"]
-    num_citations = publication["citationCount"]
-    pub_year = publication["year"]
-    processed_pub = [title, authors, num_citations, pub_year, pub_id, abstract]
-    return processed_pub
+class SemanticScholarFetcher:
+    def __init__(self, query, max_results, output_path="output.csv"):
+        # Initialize fetcher configuration
+        self.query = query
+        self.max_results = max_results
+        self.output_path = output_path
+        self.base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
+        self.headers = {"Accept": "application/json"}
+        self.results = pd.DataFrame(
+            [],
+            columns=[
+                "title",
+                "authors",
+                "num_citations",
+                "pub_year",
+                "pub_id",
+                "abstract",
+            ],
+        )
 
+    def _extract_publication_details(self, publication):
+        # Process publication data
+        title = publication["title"]
+        abstract = publication["abstract"]
+        authors = publication["authors"]
+        pub_id = publication["paperId"]
+        num_citations = publication["citationCount"]
+        pub_year = publication["year"]
+        return [title, authors, num_citations, pub_year, pub_id, abstract]
 
-def fetch_semantic_scholar_abstracts(query, max_results):
-    base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
-    headers = {"Accept": "application/json"}
-    rows = []
-    final_list = pd.DataFrame(
-        rows,
-        columns=["title", "authors", "num_citations", "pub_year", "pub_id", "abstract"],
-    )
-    offset = 0
-    limit = 100
-    papers_added = 0
-    max_retries = 5
-    retry_wait_time = 60  # wait time in seconds before retrying
-    with tqdm(
-        total=max_results,
-        desc="Fetching papers",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
-        colour="WHITE",
-    ) as pbar:
-        while len(final_list) < max_results:  # send request for publications
-            retries = 0
-            response = None
-            while retries < max_retries:
-                params = {
-                    "query": query,
-                    "offset": offset,
-                    "limit": limit,
-                    "fields": "title,authors,year,citationCount,paperId,abstract",
-                }
-                response = requests.get(
-                    base_url, headers=headers, params=params, timeout=30
-                )
-                if response.status_code == 200:
-                    break
-                else:
-                    print(
-                        f"Error: {response.status_code} - {response.text}. Retrying in {retry_wait_time} seconds..."
+    def fetch(self):
+        offset = 0
+        limit = 100
+        max_retries = 5
+        retry_wait_time = 60
+
+        with tqdm(
+            total=self.max_results,
+            desc="Fetching papers",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+            colour="WHITE",
+        ) as pbar:
+            while len(self.results) < self.max_results:
+                retries = 0
+                response = None
+                while retries < max_retries:
+                    params = {
+                        "query": self.query,
+                        "offset": offset,
+                        "limit": limit,
+                        "fields": "title,authors,year,citationCount,paperId,abstract",
+                    }
+                    response = requests.get(
+                        self.base_url, headers=self.headers, params=params, timeout=30
                     )
-                    retries += 1
-                    time.sleep(retry_wait_time)
-            if retries == max_retries:
-                print("Max retries reached. Exiting.")
-                break
-            if not response:
-                break
-            data = response.json()
-            if not data.get("data"):
-                break
-            for paper in data[
-                "data"
-            ]:  # processes response and adds to pandas dataframe
-                if paper.get("abstract"):
-                    processed_result = processSearch(paper)
-                    final_list.loc[len(final_list)] = processed_result
-                    papers_added += 1
-                    final_list.to_csv("output.csv", index=False)
-            pbar.update(papers_added)
-            papers_added = 0
-            offset += len(data["data"])
-            if len(final_list) < max_results:  # only waits if needed
-                time.sleep(300)  # rate limit is 100 requests per 5 minutes
-            else:
-                print(f"Caught {len(final_list)} articles!")
-                break
+                    if response.status_code == 200:
+                        break
+                    else:
+                        print(
+                            f"Error: {response.status_code} - {response.text}. Retrying in {retry_wait_time} seconds..."
+                        )
+                        retries += 1
+                        time.sleep(retry_wait_time)
+                if retries == max_retries or not response:
+                    print("Max retries reached or no response. Exiting.")
+                    break
+                data = response.json()
+                if not data.get("data"):
+                    break
+                papers_added = 0
+                for paper in data["data"]:
+                    if paper.get("abstract"):
+                        processed_result = self.__extract_publication_details(paper)
+                        self.results.loc[len(self.results)] = processed_result
+                        papers_added += 1
+                        self.results.to_csv(self.output_path, index=False)
+                pbar.update(papers_added)
+                offset += len(data["data"])
+                if len(self.results) < self.max_results:
+                    time.sleep(300)  # Respect API rate limits
+                else:
+                    print(f"Caught {len(self.results)} articles!")
+                    break
+        return self.results
