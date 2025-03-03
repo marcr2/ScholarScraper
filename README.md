@@ -31,7 +31,7 @@ The following techniques are used to maintain efficiency and compliance with API
 
 This structure prioritizes scalability, compliance, and resource efficiency while enabling systematic identification of research gaps through NLP-driven abstract analysis.
 
-## Development Environment Setup
+## Setup
 
 To set up the development environment, follow these steps:
 
@@ -61,3 +61,28 @@ To set up the development environment, follow these steps:
     ```
 
 By following these steps, you will have a virtual environment with all the necessary dependencies installed for the project.
+
+## Run
+
+1. **Ensure the virtual environment is activated**:
+    - On Windows:
+
+        ```bash
+        .\venv\Scripts\activate
+        ```
+
+    - On macOS and Linux:
+
+        ```bash
+        source venv/bin/activate
+        ```
+
+2. **Run the main script**:
+
+    TBD
+
+3. **Provide the necessary input**:
+    - TBD
+
+4. **Monitor the output**:
+    - The results will be saved incrementally to a CSV file as specified in the script.
