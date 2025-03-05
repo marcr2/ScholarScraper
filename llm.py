@@ -34,9 +34,10 @@ def llmRead(import_data, field, target_object):
                 f"word that best identifies the specific {target_object} in the text. Do not return a phrase "
                 f"or a sentence or a general group of {target_object}. If given a category of things, specify "
                 f"what part of that category the focus is on. If you cannot identify the specific {target_object}, "
-                f"please return 'none'."
+                f"please return 'none'. Make sure to read the text carefully and provide the most accurate answer."
+                 f"if a response has a synonym (ie. a brand name or otherwise), please use the more academic term (such as the chemical name in the case of a chemical, or the official name in the case of a nation, etc. etc.)."
             )
-            prompt = f"{import_data['abstract'][i]}"
+            prompt = f"Title: {import_data['title'][i]}, Abstract: {import_data['abstract'][i]}"
             response = openai.ChatCompletion.create(
                 model="deepseek-chat",
                 messages=[

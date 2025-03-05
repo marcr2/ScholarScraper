@@ -2,7 +2,10 @@ import time
 import pandas as pd
 import requests
 from tqdm import tqdm
-
+import json
+with open('keys.json', 'r') as f:
+    keys = json.load(f)
+semantics_scholar_api_key = keys['semantics_scholar_api_key']
 
 class SemanticScholarFetcher:
     def __init__(self, query, max_results, output_path="output.csv"):
@@ -11,7 +14,7 @@ class SemanticScholarFetcher:
         self.max_results = max_results
         self.output_path = output_path
         self.base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
-        self.headers = {"Accept": "application/json"}
+        self.headers = {"x-api-key": semantics_scholar_api_key}
         self.results = pd.DataFrame(
             [],
             columns=[
@@ -36,9 +39,9 @@ class SemanticScholarFetcher:
 
     def fetch(self):
         offset = 0
-        limit = 100
+        limit = 10
         max_retries = 5
-        retry_wait_time = 60
+        retry_wait_time = 62
 
         with tqdm(
             total=self.max_results,
@@ -73,15 +76,17 @@ class SemanticScholarFetcher:
                     break
                 papers_added = 0
                 for paper in data["data"]:
-                    if paper.get("abstract"):
-                        processed_result = self._extract_publication_details(paper)
-                        self.results.loc[len(self.results)] = processed_result
-                        papers_added += 1
-                        self.results.to_csv(self.output_path, index=False)
+                    processed_result = self._extract_publication_details(paper)
+                    self.results.loc[len(self.results)] = processed_result
+                    papers_added += 1
+                    self.results.to_csv(self.output_path, index=False)
                 pbar.update(papers_added)
                 offset += len(data["data"])
                 if len(self.results) < self.max_results:
-                    time.sleep(300)  # Respect API rate limits
+                    time.sleep(10)  # Respect API rate limits
+                elif offset >= 1000:
+                    print(f"Reached maximum offset of 1000. Exiting with {len(self.results)}.")
+                    break
                 else:
                     print(f"Caught {len(self.results)} articles!")
                     break
