@@ -1,4 +1,6 @@
 keys.json
+output.csv
+processed_output.csv
 
 # VSCode settings
 .vscode/
