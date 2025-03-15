@@ -7,7 +7,7 @@ query = input("What is your query? ")
 max_results = int(input("How many articles would you like to fetch? "))
 processType = input("Will you be using LLM or NLP? ")
 field = input(
-    "What field is your research in? (Ie. molecular biology, machine learning)"
+    "What field is your research in? (Ie. molecular biology, machine learning) "
 )
 target_object = input(
     "What would you like to group by? (Ie. treatment option, deep learning algorithm) "

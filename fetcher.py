@@ -84,6 +84,9 @@ class SemanticScholarFetcher:
                 offset += len(data["data"])
                 if len(self.results) < self.max_results:
                     time.sleep(10)  # Respect API rate limits
+                elif len(self.results) == self.max_results:
+                    print(f"Finished fetching. Caught {len(self.results)} articles!")
+                    break
                 elif offset >= 1000:
                     print(f"Reached maximum offset of 1000. Exiting with {len(self.results)}.")
                     break
