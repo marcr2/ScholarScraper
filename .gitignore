@@ -1,6 +1,7 @@
 keys.json
 output.csv
 processed_output.csv
+graph.html
 
 # VSCode settings
 .vscode/

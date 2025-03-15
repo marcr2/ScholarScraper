@@ -2,6 +2,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import webbrowser
 import pandas as pd
+import os
 
 def plotData(scored_data):
     fig = go.Figure(px.scatter(
@@ -33,4 +34,10 @@ def plotData(scored_data):
             y=1
         )
     )
+    output_path = os.path.join(os.getcwd(), "graph.html")
+    fig.write_html(output_path)
+    print(f"Graph saved to {output_path}")
     fig.show()
+
+# scored_data = pd.read_csv("processed_output.csv")
+# plotData(scored_data)
