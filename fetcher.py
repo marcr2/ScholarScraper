@@ -1,47 +1,41 @@
 import time
 import pandas as pd
 import requests
-from tqdm import tqdm
 import json
+from tqdm import tqdm
+
 with open('keys.json', 'r') as f:
     keys = json.load(f)
+
 semantics_scholar_api_key = keys['semantics_scholar_api_key']
 
 class SemanticScholarFetcher:
     def __init__(self, query, max_results, output_path="output.csv"):
-        # Initialize fetcher configuration
         self.query = query
         self.max_results = max_results
         self.output_path = output_path
         self.base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
         self.headers = {"x-api-key": semantics_scholar_api_key}
-        self.results = pd.DataFrame(
-            [],
-            columns=[
-                "title",
-                "authors",
-                "num_citations",
-                "pub_year",
-                "pub_id",
-                "abstract",
-            ],
-        )
+        self.results = pd.DataFrame(columns=[
+            "title", "authors", "num_citations", "pub_year", "pub_id", "abstract"
+        ])
 
     def _extract_publication_details(self, publication):
-        # Process publication data
-        title = publication["title"]
-        abstract = publication["abstract"]
-        authors = publication["authors"]
-        pub_id = publication["paperId"]
-        num_citations = publication["citationCount"]
-        pub_year = publication["year"]
-        return [title, authors, num_citations, pub_year, pub_id, abstract]
+        return [
+            publication.get("title"),
+            publication.get("authors"),
+            publication.get("citationCount"),
+            publication.get("year"),
+            publication.get("paperId"),
+            publication.get("abstract")
+        ]
 
-    def fetch(self):
+    def fetch(self, progress_callback=None):
         offset = 0
         limit = 10
         max_retries = 5
         retry_wait_time = 62
+        articles_fetched = 0
 
         with tqdm(
             total=self.max_results,
@@ -49,9 +43,8 @@ class SemanticScholarFetcher:
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
             colour="WHITE",
         ) as pbar:
-            while len(self.results) < self.max_results:
+            while articles_fetched < self.max_results and offset < 1000:
                 retries = 0
-                response = None
                 while retries < max_retries:
                     params = {
                         "query": self.query,
@@ -59,38 +52,44 @@ class SemanticScholarFetcher:
                         "limit": limit,
                         "fields": "title,authors,year,citationCount,paperId,abstract",
                     }
-                    response = requests.get(self.base_url, headers=self.headers, params=params, timeout=30)
-                    if response.status_code == 200:
-                        break
-                    else:
-                        print(
-                            f"Error: {response.status_code} - {response.text}. Retrying in {retry_wait_time} seconds..."
+                    try:
+                        response = requests.get(
+                            self.base_url,
+                            headers=self.headers,
+                            params=params,
+                            timeout=30
                         )
-                        retries += 1
-                        time.sleep(retry_wait_time)
-                if retries == max_retries or not response:
-                    print("Max retries reached or no response. Exiting.")
+                        if response.status_code == 200:
+                            break
+                    except Exception as e:
+                        print(f"Request exception: {e}")
+
+                    retries += 1
+                    print(f"Retrying in {retry_wait_time} seconds...")
+                    time.sleep(retry_wait_time)
+
+                if retries == max_retries or not response or response.status_code != 200:
+                    print("Max retries reached or invalid response.")
                     break
+
                 data = response.json()
-                if not data.get("data"):
+                papers = data.get("data", [])
+                if not papers:
+                    print("No papers returned. Exiting.")
                     break
-                papers_added = 0
-                for paper in data["data"]:
-                    processed_result = self._extract_publication_details(paper)
-                    self.results.loc[len(self.results)] = processed_result
-                    papers_added += 1
-                    self.results.to_csv(self.output_path, index=False)
-                pbar.update(papers_added)
-                offset += len(data["data"])
-                if len(self.results) < self.max_results:
-                    time.sleep(10)  # Respect API rate limits
-                elif len(self.results) == self.max_results:
-                    print(f"Finished fetching. Caught {len(self.results)} articles!")
-                    break
-                elif offset >= 1000:
-                    print(f"Reached maximum offset of 1000. Exiting with {len(self.results)}.")
-                    break
-                else:
-                    print(f"Caught {len(self.results)} articles!")
-                    break
+
+                for paper in papers:
+                    if articles_fetched >= self.max_results:
+                        break
+                    self.results.loc[len(self.results)] = self._extract_publication_details(paper)
+                    articles_fetched += 1
+                    if progress_callback:
+                        progress_callback(articles_fetched, self.max_results)
+                    pbar.update(1)
+
+                offset += len(papers)
+                time.sleep(10)  # Respect rate limits
+
+        print(f"Fetched {len(self.results)} articles.")
+        self.results.to_csv(self.output_path, index=False)
         return self.results

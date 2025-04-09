@@ -1,32 +1,24 @@
 import plotly.express as px
 import plotly.graph_objects as go
-import webbrowser
 import pandas as pd
-import os
+import plotly.express as px
+import pandas as pd
+import plotly.io as pio
+pio.templates.default = "plotly"  # or "plotly_dark", "ggplot2", etc.
 
 def plotData(scored_data):
-    fig = go.Figure(px.scatter(
+    pio.templates.default = "plotly"  # <== Add this line
+    fig = px.scatter(
         scored_data,
         x="pub_year",
         y="novelty score",
         color="object",
         hover_name="title",
-        custom_data=["pub_id"]
-    ))
-    
-    def on_point_click(trace, points, selector):
-        if points.point_inds:
-            idx = points.point_inds[0]
-            pub_id = trace.customdata[idx][0]
-            url = f"https://doi.org/{pub_id}"
-            webbrowser.open(url)
-    
-    for trace in fig.data:
-        trace.on_click(on_point_click)
-    
+        custom_data=["pub_id"],
+        title="Novelty Score by Journal Article Over Time"
+    )
+
     fig.update_layout(
-        title="Novelty Score by Journal article ove Time",
-        showlegend=True,
         legend=dict(
             title="Object",
             orientation="v",
@@ -34,10 +26,5 @@ def plotData(scored_data):
             y=1
         )
     )
-    output_path = os.path.join(os.getcwd(), "graph.html")
-    fig.write_html(output_path)
-    print(f"Graph saved to {output_path}")
-    fig.show()
 
-# scored_data = pd.read_csv("processed_output.csv")
-# plotData(scored_data)
+    return fig
