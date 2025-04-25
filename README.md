@@ -1,4 +1,4 @@
-# ScholarScraper
+# Novel Research Analysis Tool (NRAT)
 
 This project uses Semantic Scholar’s /paper/search endpoint to collect publications via keyword queries, extracting title, abstract, year, and citationCount to **identify under-researched topics**.
 
